@@ -26,10 +26,6 @@
 require 'terminfo'
 require 'ffi-ncurses'
 require 'forwardable'
-require 'pretty_backtrace'
-
-PrettyBacktrace.enable
-PrettyBacktrace.multi_line = true
 
 class Game
   module Display
