@@ -34,20 +34,18 @@ class Game
       end
 
       def self.update_screen(universe, interval)
-      end
-
-      def self.destroy
-      end
-
-      def self.quit?(interval)
+        raise StandardError, "method not defined for display"
       end
 
       def self.x
-        TermInfo.screen_columns
+        raise StandardError, "method not defined for display"
       end
 
       def self.y
-        TermInfo.screen_lines - 1
+        raise StandardError, "method not defined for display"
+      end
+
+      def self.destroy
       end
     end
 
@@ -56,6 +54,14 @@ class Game
         system('clear')
         puts universe
         sleep interval
+      end
+
+      def self.x
+        TermInfo.screen_columns
+      end
+
+      def self.y
+        TermInfo.screen_lines - 1
       end
     end
 
@@ -71,12 +77,6 @@ class Game
 
       def self.destroy
         FFI::NCurses.endwin
-      end
-
-      def self.quit?(interval)
-        FFI::NCurses.timeout(interval * 1000)
-        key = FFI::NCurses.getch
-        key.chr == "q" unless key == -1
       end
 
       def self.x
@@ -99,6 +99,12 @@ class Game
       end
 
       private
+
+      def self.quit?(interval)
+        FFI::NCurses.timeout(interval * 1000)
+        key = FFI::NCurses.getch
+        key.chr == "q" unless key == -1
+      end
 
       def self.update_cell(cell)
         FFI::NCurses.move(cell.y, cell.x)
