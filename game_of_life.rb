@@ -55,7 +55,7 @@ class Game
       end
     end
 
-    class Terminal < Generic
+    class Raw < Generic
       def self.update_screen(universe, interval)
         system('clear')
         puts universe
@@ -227,8 +227,8 @@ class Game
   end
 
   DISPLAY = {
-    :curses   => Display::Curses,
-    :terminal => Display::Terminal,
+    :curses => Display::Curses,
+    :raw    => Display::Raw,
   }
 
   attr_accessor :universe, :interval
@@ -263,7 +263,7 @@ class Game
 end
 
 #game = Game.new
-#game.display           = :terminal    # use different display type
+#game.display           = :raw         # use different display type
 #game.interval          =              # change interval between ticks
 #game.universe.width    =              # override auto-detect
 #game.universe.height   =              # override auto-detect
