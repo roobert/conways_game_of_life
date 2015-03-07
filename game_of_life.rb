@@ -158,7 +158,7 @@ class Game
     attr_accessor :density, :width, :height
 
     def initialize
-      @density  = 0.5
+      @density  = 0.12
       @width    = nil
       @height   = nil
       @universe = nil
