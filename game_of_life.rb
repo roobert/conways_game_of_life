@@ -75,8 +75,15 @@ class Game
         FFI::NCurses.move(0,0)
       end
 
-      def self.destroy
-        FFI::NCurses.endwin
+      def self.update_screen(universe, interval)
+        universe.each do |x|
+          x.each do |cell|
+            self.update_cell(cell)
+          end
+        end
+
+        FFI::NCurses.refresh
+        exit if self.quit?(interval)
       end
 
       def self.x
@@ -87,15 +94,8 @@ class Game
         FFI::NCurses.send("LINES")
       end
 
-      def self.update_screen(universe, interval)
-        universe.each do |x|
-          x.each do |cell|
-            self.update_cell(cell)
-          end
-        end
-
-        FFI::NCurses.refresh
-        exit if self.quit?(interval)
+      def self.destroy
+        FFI::NCurses.endwin
       end
 
       private
