@@ -23,6 +23,7 @@
 # Any live cell with more than three live neighbours dies, as if by overcrowding.
 # Any dead cell with exactly three live neighbours becomes a live cell, as if by reproduction.
 
+require 'terminfo'
 require 'ffi-ncurses'
 require 'forwardable'
 require 'pretty_backtrace'
@@ -31,48 +32,83 @@ PrettyBacktrace.enable
 PrettyBacktrace.multi_line = true
 
 class Game
-  module Screen
-    def self.start
-      FFI::NCurses.initscr
-      FFI::NCurses.clear
-      FFI::NCurses.curs_set 0
-      FFI::NCurses.raw
-      FFI::NCurses.noecho
-      FFI::NCurses.move(0,0)
+  module Display
+    class Generic
+      def self.initialize
+      end
+
+      def self.update_screen(universe, interval)
+      end
+
+      def self.destroy
+      end
+
+      def self.quit?(interval)
+      end
+
+      def self.x
+        TermInfo.screen_columns
+      end
+
+      def self.y
+        TermInfo.screen_lines - 1
+      end
     end
 
-    def self.stop
-      FFI::NCurses.endwin
+    class Terminal < Generic
+      def self.update_screen(universe, interval)
+        system('clear')
+        universe.to_s
+        sleep interval
+      end
     end
 
-    def self.x
-      FFI::NCurses.send("COLS")
-    end
+    class Curses < Generic
+      def self.initialize
+        FFI::NCurses.initscr
+        FFI::NCurses.clear
+        FFI::NCurses.curs_set 0
+        FFI::NCurses.raw
+        FFI::NCurses.noecho
+        FFI::NCurses.move(0,0)
+      end
 
-    def self.y
-      FFI::NCurses.send("LINES")
-    end
+      def self.destroy
+        FFI::NCurses.endwin
+      end
 
-    def self.puts(string)
-      FFI::NCurses.flushinp
-      FFI::NCurses.addstr(string)
-      FFI::NCurses.refresh
-    end
+      def self.quit?(interval)
+        FFI::NCurses.timeout(interval * 1000)
+        key = FFI::NCurses.getch
+        key.chr == "q" unless key == -1
+      end
 
-    def self.update_cell(cell)
-      FFI::NCurses.move(cell.y, cell.x)
-      FFI::NCurses.flushinp
-      FFI::NCurses.addstr(cell.to_s)
-    end
+      def self.x
+        FFI::NCurses.send("COLS")
+      end
 
-    def self.quit?(interval)
-      FFI::NCurses.timeout(interval * 1000)
-      key = FFI::NCurses.getch
-      key.chr == "q" unless key == -1
-    end
+      def self.y
+        FFI::NCurses.send("LINES")
+      end
 
-    def self.refresh
-      FFI::NCurses.refresh
+      def self.update_screen(universe, interval)
+        universe.each do |x|
+          x.each do |cell|
+            self.update_cell(cell)
+          end
+        end
+
+        FFI::NCurses.refresh
+        exit if self.quit?(interval)
+      end
+
+      private
+
+      def self.update_cell(cell)
+        FFI::NCurses.move(cell.y, cell.x)
+        FFI::NCurses.flushinp
+        FFI::NCurses.addstr(cell.to_s)
+      end
     end
   end
 
@@ -109,10 +145,6 @@ class Game
       @state = ALIVE
     end
 
-    def toggle!
-      @state = @state ? alive! : dead!
-    end
-
     def to_s
       state? ? "#" : " "
     end
@@ -121,43 +153,35 @@ class Game
   class Universe
     extend Forwardable
 
-    attr_reader :height, :width, :cell
+    def_delegators :@universe, :map, :each
 
-    def_delegators :@universe, :map, :map
+    attr_accessor :density, :width, :height
 
-    def initialize(density, interval)
-      @width    = dimension(:x).to_i
-      @height   = dimension(:y).to_i
-      @interval = interval
-      @density  = density
+    def initialize
+      @density  = 0.5
+      @width    = nil
+      @height   = nil
       @universe = nil
     end
 
-    def dimension(requested_dimension)
-      return Game::Screen.send(requested_dimension) unless Game::Screen.send(requested_dimension) == 0
-      raise StandardError, "could not detect screen size"
-    end
+    def create(display)
+      @width  ||= dimension(display, :x).to_i
+      @height ||= dimension(display, :y).to_i
 
-    def [](x)
-      @universe[x]
-    end
-
-    def neighbour(x, y)
-      x = -1 if x >= @width
-      y = -1 if y >= @height
-      @universe[y][x]
-    end
-
-    def create
-      (1..@height).map do |y|
+      @universe ||= (1..@height).map do |y|
         (1..@width).map do |x|
           Game::Cell.new(x, y, rand < @density)
         end
       end
     end
 
+    def dimension(display, requested_dimension)
+      return display.send(requested_dimension) unless display.send(requested_dimension) == 0
+      raise StandardError, "could not detect screen size"
+    end
+
     def tick
-      @universe ||= create
+      raise StandardError, "no universe exists" unless @universe
 
       new_universe = @universe.map.with_index do |x, y_index|
         x.map.with_index do |cell, x_index|
@@ -193,44 +217,71 @@ class Game
       relatives
     end
 
-    def update_screen
-      @universe.each_with_index do |x, y_index|
-        x.each_with_index do |cell, x_index|
-          Screen.update_cell(cell)
-        end
-      end
+    def neighbour(x, y)
+      x = -1 if x >= @width
+      y = -1 if y >= @height
+      @universe[y][x]
+    end
 
-      Screen.refresh
+
+    def [](x)
+      @universe[x]
+    end
+
+    def to_s
+      @universe.each do |x|
+        x.each do |cell|
+          print cell.to_s
+        end
+        print "\n"
+      end
     end
   end
 
-  attr_accessor :interval, :density
+  DISPLAY = {
+    :curses   => Display::Curses,
+    :terminal => Display::Terminal,
+  }
 
-  def initialize(interval = 0.1, density = 0.05)
-    @interval = interval
-    @density  = density
+  attr_accessor :universe, :interval
+
+  def initialize
+    @display  = DISPLAY[:curses]
+    @universe = Game::Universe.new
+    @interval = 0.1
   end
 
   def start
-    Screen.start
+    begin
+      @display.send(:initialize)
 
-    @universe = Game::Universe.new(@density, @interval)
+      @universe.create(@display)
 
-    loop do
-      @universe.tick
-      @universe.update_screen
-      exit if Screen.quit?(@interval)
+      loop do
+        @universe.tick
+        @display.send(:update_screen, @universe, @interval)
+      end
+    ensure
+      destroy
     end
   end
 
-  def stop
-    Screen.stop
+  def display=(display)
+    @display = DISPLAY[display]
+  end
+
+  private
+
+  def destroy
+    @display.send(:destroy)
   end
 end
 
-begin
-  game = Game.new
-  game.start
-ensure
-  game.stop
-end
+game = Game.new
+# game.display           = :terminal    # use different display type
+# game.interval          =              # change interval between ticks
+# game.universe.width    =              # override auto-detect
+# game.universe.height   =              # override auto-detect
+# game.universe.density  =              # density of randomly populated universe
+# game.universe.layout   =              # by default universe begins in random state
+game.start
