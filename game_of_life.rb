@@ -146,7 +146,7 @@ class Game
     end
 
     def to_s
-      state? ? "#" : " "
+      state? ? "o" : " "
     end
   end
 
@@ -202,6 +202,7 @@ class Game
 
       [-1, 0, 1].each do |y_offset|
         [-1, 0, 1].each do |x_offset|
+          next if y_offset == 0 and x_offset == 0
           relatives += 1 if neighbour(x_index + x_offset, y_index + y_offset).state?
         end
       end
@@ -261,11 +262,13 @@ class Game
   end
 end
 
-game = Game.new
-# game.display           = :terminal    # use different display type
-# game.interval          =              # change interval between ticks
-# game.universe.width    =              # override auto-detect
-# game.universe.height   =              # override auto-detect
-# game.universe.density  =              # density of randomly populated universe
-# game.universe.layout   =              # by default universe begins in random state
-game.start
+#game = Game.new
+#game.display           = :terminal    # use different display type
+#game.interval          =              # change interval between ticks
+#game.universe.width    =              # override auto-detect
+#game.universe.height   =              # override auto-detect
+#game.universe.density  =              # density of randomly populated universe
+#game.universe.layout   =              # by default universe begins in random state
+#game.start
+
+Game.new.start
