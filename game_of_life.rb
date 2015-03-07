@@ -164,11 +164,6 @@ class Game
       @universe = nil
     end
 
-    def fallback_dimensions(width, height)
-      @width  ||= width
-      @height ||= height
-    end
-
     def create
       @universe ||= (1..@height).map do |y|
         (1..@width).map do |x|
@@ -252,7 +247,8 @@ class Game
     begin
       @display.send(:initialize)
 
-      @universe.fallback_dimensions(@display.x, @display.y)
+      @universe.height = @display.y unless @universe.height
+      @universe.width  = @display.x unless @universe.width
 
       @universe.create
 
