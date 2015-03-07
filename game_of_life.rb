@@ -164,20 +164,17 @@ class Game
       @universe = nil
     end
 
-    def create(display)
-      @width  ||= dimension(display, :x).to_i
-      @height ||= dimension(display, :y).to_i
+    def fallback_dimensions(width, height)
+      @width  ||= width
+      @height ||= height
+    end
 
+    def create
       @universe ||= (1..@height).map do |y|
         (1..@width).map do |x|
           Game::Cell.new(x, y, rand < @density)
         end
       end
-    end
-
-    def dimension(display, requested_dimension)
-      return display.send(requested_dimension) unless display.send(requested_dimension) == 0
-      raise StandardError, "could not detect screen size"
     end
 
     def tick
@@ -255,25 +252,21 @@ class Game
     begin
       @display.send(:initialize)
 
-      @universe.create(@display)
+      @universe.fallback_dimensions(@display.x, @display.y)
+
+      @universe.create
 
       loop do
         @universe.tick
         @display.send(:update_screen, @universe, @interval)
       end
     ensure
-      destroy
+      @display.send(:destroy)
     end
   end
 
   def display=(display)
     @display = DISPLAY[display]
-  end
-
-  private
-
-  def destroy
-    @display.send(:destroy)
   end
 end
 
