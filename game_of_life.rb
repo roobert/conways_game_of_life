@@ -240,7 +240,7 @@ class Game
 
   def start
     begin
-      @display.send(:initialize)
+      @display.initialize
 
       @universe.height = @display.y unless @universe.height
       @universe.width  = @display.x unless @universe.width
@@ -249,10 +249,10 @@ class Game
 
       loop do
         @universe.tick
-        @display.send(:update_screen, @universe, @interval)
+        @display.update_screen(@universe, @interval)
       end
     ensure
-      @display.send(:destroy)
+      @display.destroy
     end
   end
 
