@@ -58,7 +58,7 @@ class Game
     class Terminal < Generic
       def self.update_screen(universe, interval)
         system('clear')
-        universe.to_s
+        puts universe
         sleep interval
       end
     end
@@ -221,12 +221,7 @@ class Game
     end
 
     def to_s
-      @universe.each do |x|
-        x.each do |cell|
-          print cell.to_s
-        end
-        print "\n"
-      end
+      @universe.map { |x| x.map { |cell| cell.to_s }.join }.join("\n")
     end
   end
 
