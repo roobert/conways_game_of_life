@@ -76,11 +76,7 @@ class Game
       end
 
       def self.update_screen(universe, interval)
-        universe.each do |x|
-          x.each do |cell|
-            self.update_cell(cell)
-          end
-        end
+        universe.each { |x| x.each { |cell| self.update_cell(cell) } }
 
         FFI::NCurses.refresh
         exit if self.quit?(interval)
