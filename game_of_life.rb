@@ -76,7 +76,7 @@ class Game
       end
 
       def self.update_screen(universe, interval)
-        universe.each { |x| x.each { |cell| self.update_cell(cell) } }
+        universe.each { |x| x.each { |cell| self.draw(cell) } }
 
         FFI::NCurses.refresh
         exit if self.quit?(interval)
@@ -102,7 +102,7 @@ class Game
         key.chr == "q" unless key == -1
       end
 
-      def self.update_cell(cell)
+      def self.draw(cell)
         FFI::NCurses.move(cell.y, cell.x)
         FFI::NCurses.flushinp
         FFI::NCurses.addstr(cell.to_s)
@@ -118,9 +118,9 @@ class Game
     attr_accessor :state
 
     def initialize(x, y, state = DEAD)
-      @x     = x
-      @y     = y
-      @state = state
+      @x       = x
+      @y       = y
+      @state   = state
     end
 
     def state?
@@ -234,7 +234,7 @@ class Game
   def initialize
     @display  = DISPLAY[:curses]
     @universe = Game::Universe.new
-    @interval = 0.1
+    @interval = 0.04
   end
 
   def start
