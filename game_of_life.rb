@@ -26,6 +26,12 @@
 require 'terminfo'
 require 'ffi-ncurses'
 require 'forwardable'
+require 'drawille'
+require 'pretty_backtrace'
+
+#PrettyBacktrace.enable
+
+#PrettyBacktrace.multi_line = true
 
 class Game
   module Display
@@ -46,6 +52,38 @@ class Game
       end
 
       def self.destroy
+      end
+    end
+
+    class Braille < Generic
+      def self.initialize
+        @@canvas = Drawille::Canvas.new
+      end
+
+      def self.update_screen(universe, interval)
+        universe.each { |x| x.each { |cell| self.draw(cell) } }
+
+        puts @@canvas.frame
+        sleep interval
+        #system('clear')
+      end
+
+      def self.x
+        TermInfo.screen_columns * 2 - 2
+      end
+
+      def self.y
+        TermInfo.screen_lines * 4
+      end
+
+      private
+
+      def self.draw(cell)
+        if cell.state?
+          @@canvas.set(cell.x, cell.y)
+        else
+          @@canvas.unset(cell.x, cell.y)
+        end
       end
     end
 
@@ -225,16 +263,17 @@ class Game
   end
 
   DISPLAY = {
-    :curses => Display::Curses,
-    :raw    => Display::Raw,
+    :curses  => Display::Curses,
+    :raw     => Display::Raw,
+    :braille => Display::Braille,
   }
 
   attr_accessor :universe, :interval
 
   def initialize
-    @display  = DISPLAY[:curses]
+    @display  = DISPLAY[:braille]
     @universe = Game::Universe.new
-    @interval = 0.04
+    @interval = 0.005
   end
 
   def start
@@ -261,7 +300,8 @@ class Game
 end
 
 #game = Game.new
-#game.display           = :raw         # use different display type
+#game.display           = :braille      # use different display type
+#game.display           = :raw          # use different display type
 #game.interval          =              # change interval between ticks
 #game.universe.width    =              # override auto-detect
 #game.universe.height   =              # override auto-detect
