@@ -64,8 +64,6 @@ class Game
         universe.each { |x| x.each { |cell| self.draw(cell) } }
 
         puts @@canvas.frame
-        sleep interval
-        #system('clear')
       end
 
       def self.x
