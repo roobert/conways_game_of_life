@@ -52,23 +52,17 @@ class Game
       end
 
       def self.destroy
-        @@flipbook.play
       end
     end
 
     class Braille < Generic
       def self.initialize
         @@canvas   = Drawille::Canvas.new
-        @@flipbook = Drawille::FlipBook.new
-        @@ticks = 100
-        @@tick = 0
       end
 
       def self.update_screen(universe, interval)
+        @@canvas.clear
         universe.each { |x| x.each { |cell| self.draw(cell) } }
-        #@@flipbook.play repeat: true, fps: 30 if @@tick == @@ticks
-        #@@tick += 1
-        #@@flipbook.snapshot @@canvas
         puts @@canvas.frame
       end
 
@@ -83,11 +77,7 @@ class Game
       private
 
       def self.draw(cell)
-        if cell.state?
-          @@canvas.set(cell.x, cell.y)
-        else
-          @@canvas.unset(cell.x, cell.y)
-        end
+        @@canvas.set(cell.x, cell.y) if cell.state?
       end
     end
 
@@ -166,15 +156,7 @@ class Game
     end
 
     def state?
-      alive?
-    end
-
-    def dead?
-      true unless @state
-    end
-
-    def alive?
-      true if @state
+      @state
     end
 
     def dead!
@@ -186,7 +168,7 @@ class Game
     end
 
     def to_s
-      state? ? "o" : " "
+      @state ? "o" : " "
     end
   end
 
@@ -198,7 +180,7 @@ class Game
     attr_accessor :density, :width, :height
 
     def initialize
-      @density  = 0.12
+      @density  = 0.1
       @width    = nil
       @height   = nil
       @universe = nil
@@ -227,7 +209,7 @@ class Game
     def establish_next_state(cell, relatives)
       next_generation_cell = cell.dup
 
-      if cell.alive?
+      if cell.state?
         next_generation_cell.dead! if relatives < 2
         next_generation_cell.dead! if relatives > 3
       else
