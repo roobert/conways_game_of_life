@@ -52,26 +52,32 @@ class Game
       end
 
       def self.destroy
+        @@flipbook.play
       end
     end
 
     class Braille < Generic
       def self.initialize
-        @@canvas = Drawille::Canvas.new
+        @@canvas   = Drawille::Canvas.new
+        @@flipbook = Drawille::FlipBook.new
+        @@ticks = 100
+        @@tick = 0
       end
 
       def self.update_screen(universe, interval)
         universe.each { |x| x.each { |cell| self.draw(cell) } }
-
+        #@@flipbook.play repeat: true, fps: 30 if @@tick == @@ticks
+        #@@tick += 1
+        #@@flipbook.snapshot @@canvas
         puts @@canvas.frame
       end
 
       def self.x
-        TermInfo.screen_columns * 2 - 2
+        TermInfo.screen_columns * 2 - 3
       end
 
       def self.y
-        TermInfo.screen_lines * 4
+        TermInfo.screen_lines * 4 - 4
       end
 
       private
@@ -271,7 +277,7 @@ class Game
   def initialize
     @display  = DISPLAY[:braille]
     @universe = Game::Universe.new
-    @interval = 0.005
+    @interval = 0.05
   end
 
   def start
